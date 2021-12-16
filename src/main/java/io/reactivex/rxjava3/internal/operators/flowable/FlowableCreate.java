@@ -242,13 +242,13 @@ public final class FlowableCreate<T> extends Flowable<T> {
         final FlowableOnSubscribe<T> source;
 
         final SequentialDisposable serial;
-        final AtomicInteger sip;
+        final AtomicBoolean subscribed;
 
         BaseEmitter(Subscriber<? super T> downstream, FlowableOnSubscribe<T> source) {
             this.downstream = downstream;
             this.source = source;
             this.serial = new SequentialDisposable();
-            this.sip = new AtomicInteger();
+            this.subscribed = new AtomicBoolean();
         }
 
         @Override
@@ -317,14 +317,13 @@ public final class FlowableCreate<T> extends Flowable<T> {
         }
 
         public final void attemptSubscribe() {
-            if (sip.get() == 0 && sip.compareAndSet(0, 1)) {
+            if (!subscribed.getAndSet(true)) {
                 try {
                     source.subscribe(this);
                 } catch (Throwable ex) {
                     Exceptions.throwIfFatal(ex);
                     onError(ex);
                 }
-                sip.decrementAndGet();
             }
         }
 
